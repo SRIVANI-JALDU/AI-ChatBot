@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon AI Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00dbde;
+            --secondary: #fc00ff;
+            --dark: #1a1a2e;
+            --light: #f1f1f1;
+            --success: #00e676;
+            --error: #ff3d00;
+            --warning: #ffab00;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f0f1a;
+            color: var(--light);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #0f0f1a 0%, #1a1a2e 100%);
+            z-index: -2;
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .chat-container {
+            width: 420px;
+            max-width: 95%;
+            height: 700px;
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .chat-header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .chat-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                rgba(0, 219, 222, 0.7) 0%, 
+                rgba(252, 0, 255, 0.7) 100%);
+            z-index: -1;
+            filter: blur(10px);
+        }
+        
+        .chat-status {
+            font-size: 0.75rem;
+            margin-top: 8px;
+            font-weight: 500;
+            padding: 5px 12px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            display: inline-block;
+            backdrop-filter: blur(5px);
+        }
+        
+        .status-connected {
+            background-color: rgba(0, 230, 118, 0.2);
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+        }
+        
+        .status-error {
+            background-color: rgba(255, 61, 0, 0.2);
+            box-shadow: 0 0 10px rgba(255, 61, 0, 0.5);
+        }
+        
+        .status-typing {
+            background-color: rgba(255, 171, 0, 0.2);
+            box-shadow: 0 0 10px rgba(255, 171, 0, 0.5);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(15, 15, 26, 0.5);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+        }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .bot-message {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .error-message {
+            background: rgba(255, 61, 0, 0.2);
+            color: var(--light);
+            border: 1px solid var(--error);
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+        }
+        
+        .chat-input-container {
+            padding: 15px;
+            background: rgba(26, 26, 46, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 14px 20px;
+            background: rgba(15, 15, 26, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            outline: none;
+            font-size: 0.95rem;
+            color: var(--light);
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        
+        #message-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        #message-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 219, 222, 0.3);
+        }
+        
+        #send-button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-left: 12px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 219, 222, 0.4);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #send-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #send-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(252, 0, 255, 0.5);
+        }
+        
+        #send-button:hover::after {
+            opacity: 1;
+        }
+        
+        #send-button:active {
+            transform: translateY(0);
+        }
+        
+        #send-button svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            margin-right: auto;
+            margin-bottom: 15px;
+            width: fit-content;
+            border-bottom-left-radius: 5px;
+            backdrop-filter: blur(5px);
+            align-items: center;
+        }
+        
+        .typing-text {
+            margin-right: 10px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        .typing-dots {
+            display: flex;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            margin: 0 3px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+        
+        .welcome-message {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        .neon-text {
+            text-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary);
+            animation: neonGlow 2s infinite alternate;
+        }
+        
+        @keyframes neonGlow {
+            from { text-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary); }
+            to { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary), 0 0 30px var(--secondary); }
+        }
+        
+        /* Particle animation */
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-1000px) rotate(720deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .chat-container {
+                height: 90vh;
+            }
+            
+            .message {
+                max-width: 90%;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="particles" id="particles"></div>
+    
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="neon-text">Neon AI</div>
+            <div class="chat-status status-connected">Connected</div>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            <div class="welcome-message">
+                Welcome to Neon AI!<br>Ask me anything or just say hello.
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+            <button id="send-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const statusIndicator = document.querySelector('.chat-status');
+        const particlesContainer = document.getElementById('particles');
+        
+        // Create floating particles
+        function createParticles() {
+            const particlesCount = 30;
+            for (let i = 0; i < particlesCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = `${Math.random() * 5 + 2}px`;
+                particle.style.height = particle.style.width;
+                particle.style.backgroundColor = `rgba(${Math.floor(Math.random() * 56 + 200)}, ${Math.floor(Math.random() * 56 + 200)}, 255, ${Math.random() * 0.4 + 0.1})`;
+                particle.style.borderRadius = '50%';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                
+                const animationDuration = Math.random() * 30 + 30;
+                particle.style.animation = `float ${animationDuration}s linear infinite`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Get current time in HH:MM format
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Add message to chat
+        function addMessage(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            
+            const time = getCurrentTime();
+            
+            if (sender === 'user') {
+                messageDiv.classList.add('user-message');
+                messageDiv.innerHTML = `${content}<span class="message-time">${time}</span>`;
+            } else if (sender === 'bot') {
+                messageDiv.classList.add('bot-message');
+                messageDiv.innerHTML = `${content}<span class="message-time">${time}</span>`;
+            } else if (sender === 'error') {
+                messageDiv.classList.add('error-message');
+                messageDiv.innerHTML = `<strong>Error:</strong> ${content}<span class="message-time">${time}</span>`;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Show typing indicator
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing-indicator');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-text">AI is typing</div>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Hide typing indicator
+        function hideTyping() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // Simulate bot response
+        function getBotResponse(userMessage) {
+            showTyping();
+            statusIndicator.textContent = "Typing...";
+            statusIndicator.className = "chat-status status-typing";
+            
+            // Simulate API delay
+            setTimeout(() => {
+                hideTyping();
+                
+                // Simple response logic - replace with actual API call
+                const lowerMsg = userMessage.toLowerCase();
+                
+                if (lowerMsg.includes('hi') || lowerMsg.includes('hello')) {
+                    addMessage("Hello there! ✨ How can I assist you today?", 'bot');
+                } 
+                else if (lowerMsg.includes('error')) {
+                    addMessage("Could not get response from the server. Please try again later.", 'error');
+                    statusIndicator.textContent = "Connection Error";
+                    statusIndicator.classList.add("status-error");
+                    
+                    // Auto-reconnect after 3 seconds
+                    setTimeout(() => {
+                        statusIndicator.textContent = "Connected";
+                        statusIndicator.classList.add("status-connected");
+                    }, 3000);
+                }
+                else if (lowerMsg.includes('how are you')) {
+                    addMessage("I'm just code and electricity, but functioning perfectly! How about you?", 'bot');
+                }
+                else if (lowerMsg.includes('thank')) {
+                    addMessage("You're welcome! Is there anything else I can help with?", 'bot');
+                }
+                else {
+                    const randomResponses = [
+                        "That's an interesting thought. Can you tell me more?",
+                        "I'm designed to assist with various topics. What would you like to know?",
+                        "I'm still learning! Could you rephrase that?",
+                        "Let me think about that... Do you have any specific questions?"
+                    ];
+                    const randomIndex = Math.floor(Math.random() * randomResponses.length);
+                    addMessage(randomResponses[randomIndex], 'bot');
+                }
+                
+                statusIndicator.textContent = "Connected";
+                statusIndicator.className = "chat-status status-connected";
+            }, 1500 + Math.random() * 1000); // Random delay between 1.5-2.5s
+        }
+        
+        // Send message handler
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                addMessage(message, 'user');
+                messageInput.value = '';
+                getBotResponse(message);
+            }
+        }
+        
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Initialize
+        createParticles();
+        statusIndicator.className = "chat-status status-connected";
+        
+        // Welcome message after 1 second
+        setTimeout(() => {
+            addMessage("Hi there! I'm Neon AI, your futuristic assistant. What can I do for you today?", 'bot');
+        }, 1000);
+    </script>
+</body>
+</html>
